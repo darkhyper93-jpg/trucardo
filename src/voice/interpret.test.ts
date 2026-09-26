@@ -85,6 +85,19 @@ describe('conversaciones completas', () => {
     expect(r.state.score).toEqual([0, 0]);
   });
 
+  it('un canto imposible avisa en vez de preguntar quién fue', () => {
+    const r = say(fresh({ flor: false }), 'truco ellos', 'quiero', 'envido');
+    expect(r.asks).toEqual([]);
+    expect(r.errors[0]).toMatch(/ya no se puede cantar envido/);
+  });
+
+  it('si solo un equipo puede cantarlo, no pregunta', () => {
+    // Con el truco querido por Nosotros, solo Nosotros puede cantar retruco.
+    const r = say(fresh(), 'truco ellos', 'quiero', 'mano para ellos', 'truco ellos', 'quiero', 'retruco');
+    expect(r.asks).toEqual([]);
+    expect(r.state.hand.truco.pending).toEqual({ level: 2, by: 0 });
+  });
+
   it('cantos repetidos por eco dan error y no cambian nada', () => {
     const r = say(fresh(), 'truco nosotros', 'truco');
     expect(r.errors[0]).toMatch(/ya estaba cantado/);

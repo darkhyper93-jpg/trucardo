@@ -1,4 +1,4 @@
-import { awaiting, florPhase } from '../game/engine';
+import { applyAction, awaiting, florPhase } from '../game/engine';
 import { ENVIDO_LABEL, FLOR_BET_LABEL, TRUCO_LABEL } from '../game/rules';
 import { other, type Action, type MatchState, type Team } from '../game/types';
 import type { CallKind, Intent } from './parser';
@@ -95,8 +95,16 @@ export function resolveIntent(state: MatchState, intent: Intent): Resolved {
       if (intent.team !== undefined && intent.call === 'flor' && wait.florWinner)
         return { kind: 'action', action: { t: 'ganaFlor', team: intent.team } };
       const team = intent.team ?? inferCallTeam(state, intent.call);
-      if (team === null) return { kind: 'ask', question: `¿Quién cantó ${CALL_LABEL[intent.call]}?` };
-      return { kind: 'action', action: callAction(intent.call, team) };
+      if (team !== null) return { kind: 'action', action: callAction(intent.call, team) };
+      // Antes de preguntar quién fue: si nadie puede cantarlo, avisar; si solo uno puede, es ese.
+      const tries = ([0, 1] as Team[]).map((t) => ({ t, r: applyAction(state, callAction(intent.call, t)) }));
+      const legal = tries.filter((x) => x.r.ok);
+      if (legal.length === 0) {
+        const first = tries[0].r;
+        return { kind: 'error', message: first.ok ? '' : first.error };
+      }
+      if (legal.length === 1) return { kind: 'action', action: callAction(intent.call, legal[0].t) };
+      return { kind: 'ask', question: `¿Quién cantó ${CALL_LABEL[intent.call]}?` };
     }
     case 'quiero':
       return { kind: 'action', action: { t: 'quiero' } };
