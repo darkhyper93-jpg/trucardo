@@ -1,0 +1,13 @@
+node_modules
+dist
+*.tsbuildinfo
+.DS_Store
+
+# secretos y configuración local: nunca se publican
+.env
+.env.*
+*.pem
+*.key
+.claude/
+.vscode/
+*.log
